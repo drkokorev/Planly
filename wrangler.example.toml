@@ -1,0 +1,9 @@
+# Cloudflare Pages project config. Copy to wrangler.toml and put your KV namespace id here:
+#   npx wrangler kv namespace create PLANLY_SYNC
+name = "planly"
+pages_build_output_dir = "dist"
+compatibility_date = "2026-01-01"
+
+[[kv_namespaces]]
+binding = "PLANLY_SYNC"
+id = "<your KV namespace id>"

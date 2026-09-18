@@ -1,0 +1,67 @@
+<!doctype html><meta charset="utf-8">
+<title>Planly screenshot rig</title>
+<style>html,body{margin:0;background:#f2f2f7}iframe{border:0;width:390px;height:844px;display:block}</style>
+<iframe id="f"></iframe>
+<script>
+/* Screenshot rig: seeds a demo dataset into localStorage, then loads the app in a 390×844 frame.
+   Query: theme=light|dark  accent=green|blue|…  view=day|list|notes|arch  mode=scale|list  date=YYYY-MM-DD
+          step=N  — drag the block named `target` (default "Design review") N steps of `dy` px (default 37) before the shot,
+          step=done → 4 steps and drop it   (for the README GIF) */
+var q = new URLSearchParams(location.search);
+var d = new Date(), iso = function(x){ return x.getFullYear()+'-'+String(x.getMonth()+1).padStart(2,'0')+'-'+String(x.getDate()).padStart(2,'0'); };
+var today = iso(d), yday = iso(new Date(d.getFullYear(),d.getMonth(),d.getDate()-1));
+var now = Date.now();
+function T(o){ return Object.assign({id:Math.random().toString(36).slice(2,9),note:'',folder:null,done:false,doneAt:null,ord:0,upd:now,seriesId:null}, o); }
+var data = {
+  folders: [{id:'f-work',name:'Work',upd:now},{id:'f-home',name:'Home',upd:now},{id:'f-ideas',name:'Ideas',upd:now}],
+  series: [{id:'s-run',title:'Morning run',note:'',start:450,dur:30,pri:1,folder:null,kind:'daily',days:[],from:yday,skip:{},ruleUpd:now,upd:now}],
+  tasks: [
+    T({id:'s-run@'+today,title:'Morning run',date:today,start:450,dur:30,pri:1,seriesId:'s-run'}),
+    T({title:'Deep work: Q4 plan',date:today,start:570,dur:120,pri:2,folder:'f-work',note:'Outline first, numbers later.'}),
+    T({title:'Team sync',date:today,start:720,dur:45,pri:1,folder:'f-work'}),
+    T({title:'Lunch',date:today,start:780,dur:45,pri:0}),
+    T({title:'Design review',date:today,start:900,dur:60,pri:2,folder:'f-work'}),
+    T({title:'Call mom',date:today,start:1020,dur:20,pri:1,folder:'f-home'}),
+    T({title:'Walk',date:today,start:1110,dur:45,pri:0}),
+    T({title:'Book a doctor',dur:30,pri:2,folder:'f-home',ord:0}),
+    T({title:'Renew passport',dur:45,pri:2,folder:'f-home',ord:1}),
+    T({title:'Write the blog post',dur:90,pri:1,folder:'f-work',ord:0,note:'About the single-file architecture'}),
+    T({title:'Read: Shape Up',dur:60,pri:1,folder:'f-ideas',ord:1}),
+    T({title:'Tidy the closet',dur:60,pri:0,folder:'f-home',ord:0}),
+    T({title:'Try the new coffee place',dur:30,pri:0,folder:'f-ideas',ord:1}),
+    T({title:'Morning emails',date:today,start:480,dur:30,pri:0,done:true,doneAt:now-3600e3}),
+    T({title:'Pay rent',dur:10,pri:2,done:true,doneAt:now-26*3600e3})
+  ],
+  notes: [
+    {id:'n1',title:'Trip to Lisbon',upd:now-1800e3,body:'<h2>Must see</h2><ul><li>Alfama at sunset</li><li>LX Factory on Sunday</li><li>Tram 28 early morning</li></ul><h2>Food</h2><ol><li>Time Out Market</li><li>Pastéis de Belém</li></ol><p><b>Budget:</b> ~€120/day</p>'},
+    {id:'n2',title:'Book notes: Shape Up',upd:now-86400e3*2,body:'<p>Six-week cycles, appetite instead of estimates.</p><ul><li>Shaping happens before betting</li><li>Circuit breaker: no automatic extensions</li></ul>'},
+    {id:'n3',title:'Ideas',upd:now-86400e3*5,body:'<ul><li>Weekly review template</li><li>Export day as text</li></ul>'}
+  ],
+  del:{}, settingsUpd:now,
+  settings:{theme:q.get('theme')||'auto',dayStart:7,dayEnd:22,hour:64,snap:5,dur:60,mode:q.get('mode')||'scale',accent:q.get('accent')||'green',lang:'en'}
+};
+localStorage.setItem('planly.v1', JSON.stringify(data));
+localStorage.removeItem('planly.sync');
+
+var f = document.getElementById('f');
+f.src = '/index.html?view=' + (q.get('view')||'day') + '&date=' + (q.get('date')||today) + '&rig=1';
+f.onload = function(){
+  var w = f.contentWindow, doc = w.document, step = q.get('step');
+  if(!step) return;
+  setTimeout(function(){
+    var target = q.get('target') || 'Design review', dyStep = +(q.get('dy') || 37);
+    var b = Array.prototype.find.call(doc.querySelectorAll('.block'), function(x){ return x.textContent.indexOf(target)>=0; });
+    if(!b) return;
+    // keep the block in the upper part of the viewport so the drag never triggers edge auto-scroll
+    var wrap = doc.getElementById('tlwrap');
+    wrap.scrollTop = Math.max(0, b.offsetTop - 150);
+    var r = b.getBoundingClientRect(), x = r.left+60, y = r.top+30;
+    function pev(type, el, cx, cy){ el.dispatchEvent(new w.PointerEvent(type,{bubbles:true,cancelable:true,clientX:cx,clientY:cy,pointerId:1,pointerType:'mouse',button:0,buttons:1})); }
+    pev('pointerdown', b, x, y);
+    pev('pointermove', w, x, y+6);
+    var n = (step==='done') ? 4 : +step, dy = dyStep;   // 64px = 1 hour
+    for(var i=1;i<=n;i++) pev('pointermove', w, x, y+6+dy*i);
+    if(step==='done') pev('pointerup', w, x, y+6+dy*n);
+  }, 300);
+};
+</script>

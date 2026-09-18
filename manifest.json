@@ -1,0 +1,19 @@
+{
+  "name": "Planly",
+  "short_name": "Planly",
+  "description": "Минималистичный планировщик дня с временной шкалой",
+  "start_url": ".",
+  "scope": ".",
+  "display": "standalone",
+  "display_override": ["standalone", "minimal-ui"],
+  "orientation": "portrait",
+  "background_color": "#f2f2f7",
+  "theme_color": "#17a05e",
+  "lang": "ru",
+  "categories": ["productivity"],
+  "icons": [
+    { "src": "icons/icon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png" },
+    { "src": "icons/icon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}

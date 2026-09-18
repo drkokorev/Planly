@@ -1,0 +1,8 @@
+.DS_Store
+dist/
+.build/
+node_modules/
+.wrangler/
+.claude/
+wrangler.toml
+tools/shots/raw/

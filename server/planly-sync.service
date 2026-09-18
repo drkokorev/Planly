@@ -1,0 +1,17 @@
+# systemd unit for the self-hosted sync server
+# sudo cp server/planly-sync.service /etc/systemd/system/ && sudo systemctl enable --now planly-sync
+[Unit]
+Description=Planly sync server
+After=network.target
+
+[Service]
+Type=simple
+User=www-data
+Environment=PORT=8787
+Environment=DATA_DIR=/var/lib/planly
+# Environment=ALLOWED_CODES=AAAA-BBBB-CCCC-DDDD,EEEE-FFFF-GGGG-HHHH
+ExecStart=/usr/bin/node /opt/planly/server/sync-node.js
+Restart=on-failure
+
+[Install]
+WantedBy=multi-user.target
