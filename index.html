@@ -254,7 +254,10 @@ var PLANLY_I18N = {
   "день": {
    "one": "day",
    "other": "days"
-  }
+  },
+  "Папки": "Folders",
+  "Перетащите, чтобы изменить порядок": "Drag to reorder",
+  "Изменить": "Edit"
  },
  "es": {
   "только по приглашению": "solo por invitación en este servidor",
@@ -483,7 +486,10 @@ var PLANLY_I18N = {
   "день": {
    "one": "día",
    "other": "días"
-  }
+  },
+  "Папки": "Carpetas",
+  "Перетащите, чтобы изменить порядок": "Arrastra para reordenar",
+  "Изменить": "Editar"
  },
  "de": {
   "только по приглашению": "auf diesem Server nur auf Einladung",
@@ -712,7 +718,10 @@ var PLANLY_I18N = {
   "день": {
    "one": "Tag",
    "other": "Tage"
-  }
+  },
+  "Папки": "Ordner",
+  "Перетащите, чтобы изменить порядок": "Zum Sortieren ziehen",
+  "Изменить": "Bearbeiten"
  },
  "zh": {
   "только по приглашению": "此服务器仅限邀请",
@@ -934,7 +943,10 @@ var PLANLY_I18N = {
   },
   "день": {
    "other": "天"
-  }
+  },
+  "Папки": "文件夹",
+  "Перетащите, чтобы изменить порядок": "拖动以排序",
+  "Изменить": "编辑"
  },
  "hi": {
   "только по приглашению": "इस सर्वर पर केवल आमंत्रण से",
@@ -1163,7 +1175,10 @@ var PLANLY_I18N = {
   "день": {
    "one": "दिन",
    "other": "दिन"
-  }
+  },
+  "Папки": "फ़ोल्डर",
+  "Перетащите, чтобы изменить порядок": "क्रम बदलने के लिए खींचें",
+  "Изменить": "संपादित करें"
  }
 };
 </script>
@@ -1276,13 +1291,33 @@ button{background:none;border:0;padding:0;cursor:pointer}
 .ntitle{width:100%;border:0;background:transparent;outline:none;padding:6px 16px 2px;
   font:700 26px/1.2 -apple-system,BlinkMacSystemFont,"SF Pro Display",system-ui,sans-serif;letter-spacing:-.4px}
 .ntitle::placeholder{color:var(--text-3)}
-.ntools{display:flex;gap:6px;padding:8px 14px;overflow-x:auto;scrollbar-width:none}
-.ntools::-webkit-scrollbar{display:none}
-.ntools button{flex:none;padding:7px 12px;border-radius:9px;background:var(--chip);font-size:13px;color:var(--text);white-space:nowrap}
-.ntools button:active{background:var(--chip-2)}
-.ntools button.h{font-weight:700}
-.ntools button.i{font-style:italic}
-.nbody{flex:1;min-height:0;overflow-y:auto;padding:6px 16px calc(40px + var(--sb));outline:none;font-size:16.5px;line-height:1.5;
+/* панель форматирования снизу, над клавиатурой — как в Заметках iPhone */
+.ntoolbar{position:fixed;left:0;right:0;bottom:var(--kb,0px);z-index:30;display:flex;align-items:center;gap:6px;
+  padding:8px 12px calc(8px + var(--sb));border-top:.5px solid var(--sep);
+  background:color-mix(in srgb,var(--bg) 92%,transparent);backdrop-filter:blur(20px)}
+body.kb .ntoolbar{padding-bottom:8px}
+.ntoolbar button{flex:none;min-width:42px;height:36px;padding:0 12px;border-radius:9px;background:var(--chip);
+  font-size:15px;color:var(--text);display:grid;place-items:center;transition:background .12s}
+.ntoolbar button:active{background:var(--chip-2)}
+.ntoolbar button.on{background:var(--accent);color:#fff}
+.ntoolbar button.h{font-weight:700}
+.ntoolbar button.i{font-style:italic}
+.ntoolbar .aa{font-weight:600;letter-spacing:-.3px}
+.ntoolbar .grow{flex:1}
+.ntoolbar .done{display:none;background:transparent;color:var(--accent);font-weight:600;padding:0 4px}
+body.kb .ntoolbar .done{display:grid}
+.fmtpop{position:fixed;left:12px;right:12px;bottom:calc(var(--kb,0px) + 60px + var(--sb));z-index:31;
+  background:var(--surface);border-radius:14px;box-shadow:var(--shadow);overflow:hidden;animation:fade .15s}
+body.kb .fmtpop{bottom:calc(var(--kb,0px) + 60px)}
+.fmtpop button{display:flex;width:100%;align-items:center;justify-content:space-between;gap:10px;
+  padding:13px 16px;text-align:left;color:var(--text)}
+.fmtpop button+button{border-top:.5px solid var(--sep)}
+.fmtpop .s2{font:700 20px/1.2 -apple-system,BlinkMacSystemFont,"SF Pro Display",system-ui,sans-serif;letter-spacing:-.3px}
+.fmtpop .s3{font:600 17px/1.2 -apple-system,BlinkMacSystemFont,system-ui,sans-serif}
+.fmtpop .sp{font:400 16px/1.2 -apple-system,BlinkMacSystemFont,system-ui,sans-serif}
+.fmtpop .tick{color:var(--accent);font-weight:700;opacity:0}
+.fmtpop button.on .tick{opacity:1}
+.nbody{flex:1;min-height:0;overflow-y:auto;padding:6px 16px calc(96px + var(--sb));outline:none;font-size:16.5px;line-height:1.5;
   -webkit-user-select:text;user-select:text;overscroll-behavior:contain}
 .nbody:empty::before{content:attr(data-ph);color:var(--text-3)}
 .nbody h2{font-size:22px;font-weight:700;margin:14px 0 4px;letter-spacing:-.3px}
@@ -1373,11 +1408,20 @@ button{background:none;border:0;padding:0;cursor:pointer}
 .dgap .ln{flex:1;height:1px;background:var(--sep)}
 
 /* ---- папки ---- */
+.foldersrow{display:flex;align-items:center;gap:6px;padding:2px 14px 8px}
+.foldersrow .folders{flex:1;min-width:0;padding:0}
+.fmore{flex:none;width:32px;height:32px;border-radius:50%;background:var(--chip);color:var(--text-2);
+  display:grid;place-items:center;transition:transform .12s}
+.fmore:active{transform:scale(.92)}
+.fmore svg{width:15px;height:15px;stroke:currentColor;fill:none;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round}
+.fchip.floating{position:fixed;z-index:60;box-shadow:var(--shadow);transform:scale(1.04);pointer-events:none}
+.fph{flex:none;border-radius:20px;background:var(--chip-2);height:32px}
 .folders{display:flex;gap:6px;overflow-x:auto;padding:2px 14px 8px;scrollbar-width:none}
 .folders::-webkit-scrollbar{display:none}
 .fchip{flex:none;display:flex;align-items:center;gap:6px;padding:7px 13px;border-radius:20px;background:var(--chip);
   font-size:13.5px;color:var(--text-2);white-space:nowrap;transition:background .15s,color .15s,transform .12s}
 .fchip:active{transform:scale(.96)}
+.fchip{touch-action:pan-x}
 .fchip.on{background:var(--accent);color:#fff}
 .fchip .cnt{font-size:12px;opacity:.6;font-variant-numeric:tabular-nums}
 .fchip.on .cnt{opacity:.8}
@@ -1385,6 +1429,17 @@ button{background:none;border:0;padding:0;cursor:pointer}
 .fchip.add{color:var(--accent);font-weight:600;padding:7px 14px}
 .finput{flex:none;background:var(--surface);border:0;border-radius:20px;padding:7px 13px;font-size:13.5px;
   outline:1.5px solid var(--accent);min-width:160px}
+
+/* ---- список папок ---- */
+.frow{display:flex;align-items:center;gap:12px;padding:12px 14px;background:var(--surface);border-radius:12px;touch-action:pan-y}
+.frow+.frow{margin-top:6px}
+.frow.floating{position:fixed;z-index:60;box-shadow:var(--shadow);transform:scale(1.02);pointer-events:none;margin:0}
+.frow .fn{flex:1;min-width:0;font-size:15.5px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.frow .fc{font-size:13px;color:var(--text-3);font-variant-numeric:tabular-nums}
+.frow .fdrag{color:var(--text-3);display:grid;place-items:center;width:22px}
+.frow .fdrag svg{width:16px;height:16px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round}
+.frow .fedit{color:var(--accent);font-size:14px;padding:4px 2px}
+.frow.on .fn{font-weight:600;color:var(--accent)}
 
 /* ---- backlog ---- */
 .scroll{flex:1;min-height:0;overflow-y:auto;overscroll-behavior:contain;-webkit-overflow-scrolling:touch;padding:4px 14px calc(96px + var(--sb))}
@@ -1415,6 +1470,7 @@ body.reorder .list{min-height:44px;outline:1px dashed var(--sep);outline-offset:
 .item,.drow{transition:transform .12s}
 
 /* ---- tabbar + fab ---- */
+body.note-open .tabbar{display:none}
 .tabbar{display:flex;border-top:.5px solid var(--sep);background:color-mix(in srgb,var(--bg) 88%,transparent);backdrop-filter:blur(20px);padding-bottom:var(--sb)}
 .tab{flex:1;display:flex;flex-direction:column;align-items:center;gap:2px;padding:8px 0 6px;color:var(--text-3);font-size:10.5px;min-width:0}
 .tab svg{width:23px;height:23px;stroke:currentColor;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
@@ -1516,7 +1572,10 @@ textarea.f-note{width:100%;background:var(--field);border:0;border-radius:12px;p
       <div class="grow"></div>
       <button class="ib" id="bSet2" aria-label="Настройки" data-i18n-aria="Настройки"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.6 1.6 0 00.3 1.8l.1.1a2 2 0 11-2.8 2.8l-.1-.1a1.6 1.6 0 00-1.8-.3 1.6 1.6 0 00-1 1.5V21a2 2 0 11-4 0v-.1A1.6 1.6 0 008 19.4a1.6 1.6 0 00-1.8.3l-.1.1a2 2 0 11-2.8-2.8l.1-.1a1.6 1.6 0 00.3-1.8 1.6 1.6 0 00-1.5-1H2a2 2 0 110-4h.1A1.6 1.6 0 004.6 8a1.6 1.6 0 00-.3-1.8l-.1-.1a2 2 0 112.8-2.8l.1.1a1.6 1.6 0 001.8.3H9a1.6 1.6 0 001-1.5V2a2 2 0 114 0v.1a1.6 1.6 0 001 1.5 1.6 1.6 0 001.8-.3l.1-.1a2 2 0 112.8 2.8l-.1.1a1.6 1.6 0 00-.3 1.8V9a1.6 1.6 0 001.5 1H22a2 2 0 110 4h-.1a1.6 1.6 0 00-1.5 1z"/></svg></button>
     </div>
-    <div class="folders" id="folders"></div>
+    <div class="foldersrow">
+      <div class="folders" id="folders"></div>
+      <button class="fmore" id="fMore" aria-label="Папки"><svg viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></svg></button>
+    </div>
     <div class="scroll" id="backlog"></div>
   </section>
 
@@ -1539,16 +1598,16 @@ textarea.f-note{width:100%;background:var(--field);border:0;border-radius:12px;p
       <button class="tb r" id="nDel" style="color:var(--red);min-width:0" data-i18n="Удалить">Удалить</button>
     </div>
     <input class="ntitle" id="nTitle" placeholder="Заголовок" data-i18n-ph="Заголовок" autocomplete="off">
-    <div class="ntools">
-      <button data-cmd="formatBlock" data-val="H2" class="h" data-i18n="Заголовок">Заголовок</button>
-      <button data-cmd="formatBlock" data-val="H3" class="h" style="font-size:12.5px" data-i18n="Подзаголовок">Подзаголовок</button>
-      <button data-cmd="formatBlock" data-val="P" data-i18n="Текст">Текст</button>
-      <button data-cmd="insertUnorderedList" data-i18n="• Список">• Список</button>
-      <button data-cmd="insertOrderedList" data-i18n="1. Список">1. Список</button>
+    <div class="nbody" id="nBody" contenteditable="true" data-ph="Начните писать…" data-i18n-ph="Начните писать…"></div>
+    <div class="ntoolbar" id="nToolbar" hidden>
+      <button class="aa" id="nAa" aria-label="Стиль">Aa</button>
+      <button data-cmd="insertUnorderedList" aria-label="• Список" data-i18n-aria="• Список">•</button>
+      <button data-cmd="insertOrderedList" aria-label="1. Список" data-i18n-aria="1. Список">1.</button>
       <button data-cmd="bold" class="h" data-i18n="Ж">Ж</button>
       <button data-cmd="italic" class="i" data-i18n="К">К</button>
+      <div class="grow"></div>
+      <button class="done" id="nDone" data-i18n="Готово">Готово</button>
     </div>
-    <div class="nbody" id="nBody" contenteditable="true" data-ph="Начните писать…" data-i18n-ph="Начните писать…"></div>
   </section>
 
   <section class="view" id="v-arch">
@@ -1628,7 +1687,7 @@ var WD=(function(){
   return out;
 })();
 var KEEP_DAYS=14;
-var BUILD='18.09 11:14'; if(BUILD.charAt(0)==='_') BUILD='dev';
+var BUILD='29.09 14:22'; if(BUILD.charAt(0)==='_') BUILD='dev';
 function isApp(){return !!(window.navigator.standalone||(window.matchMedia&&matchMedia('(display-mode: standalone)').matches));}
 var PRI=[{n:tr('Низкий'),c:'var(--gray)'},{n:tr('Средний'),c:'var(--accent)'},{n:tr('Высокий'),c:'var(--orange)'}];
 
@@ -1641,6 +1700,7 @@ function load(){
     if(raw){
       S.tasks=(raw.tasks||[]).map(normalize);
       S.folders=(raw.folders||[]).filter(function(f){return f&&f.id&&f.name;});
+      normFolders();
       S.notes=(raw.notes||[]).map(normalizeNote);
       S.series=(raw.series||[]).map(normalizeSeries);
       S.settings=Object.assign({},DEF,raw.settings||{});
@@ -1752,6 +1812,17 @@ function dayMax(){return S.settings.dayEnd*60;}
 function isSched(t){return !!t.date && typeof t.start==='number';}
 function onDay(d){return S.tasks.filter(function(t){return !t.done&&isSched(t)&&t.date===d;}).sort(function(a,b){return a.start-b.start||a.dur-b.dur;});}
 function backlogList(){return S.tasks.filter(function(t){return !t.done&&!isSched(t);}).sort(function(a,b){return b.pri-a.pri||a.ord-b.ord;});}
+/* у папок есть свой порядок; у старых записей его не было — проставляем по текущему виду */
+function normFolders(){
+  S.folders.forEach(function(f,i){ if(typeof f.ord!=='number') f.ord=i; });
+}
+function sortedFolders(){
+  return S.folders.slice().sort(function(a,b){ return (a.ord||0)-(b.ord||0); });
+}
+function reorderFolders(ids){
+  ids.forEach(function(id,i){ var f=folderById(id); if(f) f.ord=i; });
+  save();
+}
 function folderById(id){for(var i=0;i<S.folders.length;i++)if(S.folders[i].id===id)return S.folders[i];return null;}
 function folderName(id){var f=folderById(id);return f?f.name:'';}
 function inFolder(t,sel){return sel==='all'?true:(sel==='none'?!t.folder:t.folder===sel);}
@@ -2023,13 +2094,124 @@ function renderFolders(){
       (c?'<span class="cnt">'+c+'</span>':'')+((on&&user)?'<span class="dots">···</span>':'')+'</button>';
   }
   html+=chip('all',tr('Все'));
-  S.folders.forEach(function(f){ html+=chip(f.id,f.name); });
+  sortedFolders().forEach(function(f){ html+=chip(f.id,f.name); });
   if(S.folders.length&&all.filter(function(t){return !t.folder;}).length) html+=chip('none',tr('Без папки'));
   html+='<button class="fchip add" data-f="+">+ '+tr('Папка')+'</button>';
   var box=$('#folders'); box.innerHTML=html;
+  $$('.fchip',box).forEach(function(el){
+    if(el.dataset.f!=='all'&&el.dataset.f!=='none'&&el.dataset.f!=='+') wireFolderChip(el);
+  });
   var on=$('.fchip.on',box);
   if(on&&on.scrollIntoView) on.scrollIntoView({block:'nearest',inline:'nearest'});
 }
+
+/* долгое нажатие на чипс — и папку можно двигать по строке */
+function wireFolderChip(el){
+  var ph=null, ox=0;
+  pressDrag(el,{
+    start:function(e){
+      var r=el.getBoundingClientRect(); ox=e.clientX-r.left;
+      ph=document.createElement('div'); ph.className='fph'; ph.style.width=r.width+'px';
+      el.parentNode.insertBefore(ph,el);
+      el.style.width=r.width+'px'; el.style.left=r.left+'px'; el.style.top=r.top+'px';
+      el.classList.add('floating');
+    },
+    move:function(e){
+      el.style.left=(e.clientX-ox)+'px';
+      var row=ph.parentNode, before=null,
+          chips=$$('.fchip',row).filter(function(x){
+            return x!==el&&x.dataset.f!=='all'&&x.dataset.f!=='none'&&x.dataset.f!=='+';
+          });
+      for(var i=0;i<chips.length;i++){
+        var r=chips[i].getBoundingClientRect();
+        if(e.clientX<r.left+r.width/2){ before=chips[i]; break; }
+      }
+      row.insertBefore(ph, before || $('.fchip[data-f="none"]',row) || $('.fchip.add',row));
+    },
+    end:function(){
+      var row=ph.parentNode;
+      el.classList.remove('floating'); el.removeAttribute('style');
+      row.insertBefore(el,ph); ph.remove(); ph=null;
+      reorderFolders($$('.fchip',row).map(function(x){return x.dataset.f;})
+        .filter(function(id){ return id!=='all'&&id!=='none'&&id!=='+'; }));
+      renderFolders();
+    }
+  });
+}
+
+/* выпадающий список всех папок */
+function openFoldersSheet(){
+  var all=backlogList(), sh=openSheet(
+    '<div class="sh-h"><button class="tb" id="fsClose">'+tr('Закрыть')+'</button><div class="t">'+tr('Папки')+'</div>'+
+    '<button class="tb r strong" id="fsAdd">+</button></div>'+
+    '<div class="sh-b"><div id="fsList"></div>'+
+    '<div class="hint" style="text-align:center">'+tr('Перетащите, чтобы изменить порядок')+'</div></div>');
+
+  function row(id,name,drag){
+    var c=all.filter(function(t){return inFolder(t,id);}).length;
+    return '<div class="frow'+(S.folderSel===id?' on':'')+'" data-f="'+id+'">'+
+      (drag?'<span class="fdrag"><svg viewBox="0 0 24 24"><path d="M4 8h16M4 16h16"/></svg></span>':'<span class="fdrag"></span>')+
+      '<span class="fn">'+esc(name)+'</span><span class="fc">'+c+'</span>'+
+      (drag?'<button class="fedit" data-act="edit">'+tr('Изменить')+'</button>':'')+'</div>';
+  }
+  function draw(){
+    var html=row('all',tr('Все'),false);
+    sortedFolders().forEach(function(f){ html+=row(f.id,f.name,true); });
+    if(S.folders.length&&all.filter(function(t){return !t.folder;}).length) html+=row('none',tr('Без папки'),false);
+    $('#fsList',sh).innerHTML=html;
+    $$('.frow',sh).forEach(function(el){
+      var id=el.dataset.f;
+      var ed=$('[data-act="edit"]',el);
+      if(ed) ed.addEventListener('click',function(ev){ ev.stopPropagation(); openFolderSheet(folderById(id)); });
+      if(id==='all'||id==='none'){
+        el.addEventListener('click',function(){ S.folderSel=id; closeSheet(); render(); });
+        return;
+      }
+      wireFolderRow(el);
+    });
+  }
+  function wireFolderRow(el){
+    var ph=null, oy=0;
+    pressDrag(el,{
+      ignore:function(e){ return !!e.target.closest('[data-act]'); },
+      start:function(e){
+        var r=el.getBoundingClientRect(); oy=e.clientY-r.top;
+        ph=document.createElement('div'); ph.className='frow'; ph.style.visibility='hidden'; ph.style.height=r.height+'px';
+        el.parentNode.insertBefore(ph,el);
+        el.style.width=r.width+'px'; el.style.left=r.left+'px'; el.style.top=r.top+'px';
+        el.classList.add('floating');
+      },
+      move:function(e){
+        el.style.top=(e.clientY-oy)+'px';
+        var list=ph.parentNode, before=null,
+            rows=$$('.frow',list).filter(function(x){ return x!==el&&x!==ph&&x.dataset.f&&x.dataset.f!=='all'&&x.dataset.f!=='none'; });
+        for(var i=0;i<rows.length;i++){
+          var r=rows[i].getBoundingClientRect();
+          if(e.clientY<r.top+r.height/2){ before=rows[i]; break; }
+        }
+        list.insertBefore(ph, before || $('.frow[data-f="none"]',list));
+      },
+      end:function(){
+        var list=ph.parentNode;
+        el.classList.remove('floating'); el.removeAttribute('style');
+        list.insertBefore(el,ph); ph.remove(); ph=null;
+        reorderFolders($$('.frow',list).map(function(x){return x.dataset.f;})
+          .filter(function(id){ return id&&id!=='all'&&id!=='none'; }));
+        draw(); renderFolders();
+      },
+      tap:function(){ S.folderSel=el.dataset.f; closeSheet(); render(); }
+    });
+  }
+  $('#fsClose',sh).addEventListener('click',closeSheet);
+  $('#fsAdd',sh).addEventListener('click',function(){
+    closeSheet();
+    var row=$('#folders'); var add=$('.fchip.add',row);
+    if(add) add.remove();
+    newFolder(row,function(f){ if(f)S.folderSel=f.id; render(); });
+  });
+  draw();
+}
+$('#fMore').addEventListener('click',openFoldersSheet);
 
 function newFolder(host,cb){
   var el=document.createElement('input');
@@ -2041,7 +2223,7 @@ function newFolder(host,cb){
     var v=el.value.trim(), f=null;
     if(ok&&v){
       f=S.folders.filter(function(x){return x.name.toLowerCase()===v.toLowerCase();})[0]||null;
-      if(!f){ f={id:uid(),name:v}; S.folders.push(f); save(); }
+      if(!f){ f={id:uid(),name:v,ord:S.folders.length}; S.folders.push(f); save(); }
     }
     cb(f);
   }
@@ -2171,6 +2353,10 @@ function cleanHTML(html){
       while(c.attributes.length) c.removeAttribute(c.attributes[0].name);
     }
   })(tpl.content);
+  // пустые абзацы, которые остаются после execCommand, дают лишние отступы
+  Array.prototype.slice.call(tpl.content.querySelectorAll('p,div')).forEach(function(el){
+    if(!el.textContent.trim() && !el.querySelector('br,ul,ol,li,h2,h3')) el.parentNode.removeChild(el);
+  });
   return tpl.innerHTML;
 }
 function textOf(html){
@@ -2241,16 +2427,78 @@ $('#nDel').addEventListener('click',function(){
   S.notes=S.notes.filter(function(y){return y.id!==x.id;});
   noteId=null; save(); setView('notes'); renderNotes(); toast(tr('Заметка удалена'),true);
 });
-$$('.ntools button').forEach(function(b){
-  b.addEventListener('mousedown',function(e){ e.preventDefault(); });   // не терять выделение
-  b.addEventListener('click',function(){
-    var body=$('#nBody'), sel=window.getSelection();
-    if(!sel.rangeCount||!body.contains(sel.anchorNode)) body.focus();
-    var cmd=b.dataset.cmd, val=b.dataset.val;
-    try{ document.execCommand(cmd,false,val?'<'+val+'>':null); }catch(e){}
-    queueNote();
+function exec(cmd,val){
+  var body=$('#nBody'), sel=window.getSelection();
+  if(!sel.rangeCount||!body.contains(sel.anchorNode)) body.focus();
+  try{ document.execCommand(cmd,false,val?'<'+val+'>':null); }catch(e){}
+  queueNote(); syncToolbar(); keepCaret();
+}
+function wireFmt(el){
+  el.addEventListener('mousedown',function(e){ e.preventDefault(); });   // не терять выделение
+  el.addEventListener('click',function(){ exec(el.dataset.cmd, el.dataset.val); });
+}
+$$('#nToolbar button[data-cmd]').forEach(wireFmt);
+
+/* текущий блок: H2 / H3 / обычный текст */
+function curBlock(){
+  var sel=window.getSelection(), node=sel&&sel.rangeCount?sel.getRangeAt(0).startContainer:null, body=$('#nBody');
+  while(node&&node!==body){
+    if(node.nodeType===1&&(node.tagName==='H2'||node.tagName==='H3')) return node.tagName;
+    node=node.parentNode;
+  }
+  return 'P';
+}
+function syncToolbar(){
+  if(S.view!=='note') return;
+  var st=function(c){ try{ return document.queryCommandState(c); }catch(e){ return false; } };
+  $$('#nToolbar button[data-cmd]').forEach(function(b){
+    var on=false;
+    if(b.dataset.cmd==='bold') on=st('bold');
+    else if(b.dataset.cmd==='italic') on=st('italic');
+    else if(b.dataset.cmd==='insertUnorderedList') on=st('insertUnorderedList');
+    else if(b.dataset.cmd==='insertOrderedList') on=st('insertOrderedList');
+    b.classList.toggle('on',on);
   });
+  var pop=$('#fmtPop');
+  if(pop){ var cb=curBlock(); $$('button',pop).forEach(function(b){ b.classList.toggle('on', b.dataset.val===cb); }); }
+}
+document.addEventListener('selectionchange',function(){ if(S.view==='note') syncToolbar(); });
+
+/* попап стилей — как лист «Aa» в Заметках */
+function closeFmt(){ var p=$('#fmtPop'); if(p) p.remove(); }
+$('#nAa').addEventListener('mousedown',function(e){ e.preventDefault(); });
+$('#nAa').addEventListener('click',function(e){
+  e.stopPropagation();
+  if($('#fmtPop')){ closeFmt(); return; }
+  var pop=document.createElement('div');
+  pop.className='fmtpop'; pop.id='fmtPop';
+  pop.innerHTML=[['H2','s2',tr('Заголовок')],['H3','s3',tr('Подзаголовок')],['P','sp',tr('Текст')]]
+    .map(function(x){ return '<button data-val="'+x[0]+'"><span class="'+x[1]+'">'+esc(x[2])+'</span><span class="tick">✓</span></button>'; }).join('');
+  document.body.appendChild(pop);
+  $$('button',pop).forEach(function(b){
+    b.addEventListener('mousedown',function(ev){ ev.preventDefault(); });
+    b.addEventListener('click',function(){ exec('formatBlock', b.dataset.val); closeFmt(); });
+  });
+  syncToolbar();
 });
+document.addEventListener('click',function(e){
+  if($('#fmtPop')&&!e.target.closest('#fmtPop')&&!e.target.closest('#nAa')) closeFmt();
+});
+$('#nDone').addEventListener('click',function(){ flushNote(); $('#nBody').blur(); $('#nTitle').blur(); });
+
+/* курсор не должен прятаться под панелью или клавиатурой */
+function keepCaret(){
+  if(S.view!=='note') return;
+  var sel=window.getSelection(); if(!sel||!sel.rangeCount) return;
+  var body=$('#nBody'); if(!body.contains(sel.anchorNode)) return;
+  var rects=sel.getRangeAt(0).getClientRects(), r=rects.length?rects[rects.length-1]:null;
+  if(!r||!r.height){ var el=sel.anchorNode; if(el&&el.nodeType===3) el=el.parentNode; r=el&&el.getBoundingClientRect&&el.getBoundingClientRect(); }
+  if(!r||!r.height) return;
+  var bar=$('#nToolbar').getBoundingClientRect(), box=body.getBoundingClientRect();
+  if(r.bottom>bar.top-10) body.scrollTop+=(r.bottom-(bar.top-10))+20;
+  else if(r.top<box.top+10) body.scrollTop-=((box.top+10)-r.top)+20;
+}
+$('#nBody').addEventListener('input',keepCaret);
 $('#nBody').addEventListener('paste',function(e){
   // вставляем только текст — без чужих стилей
   if(!e.clipboardData) return;
@@ -2893,7 +3141,7 @@ function applyRemote(remote){
   applyingRemote=true;
   S.del=mergeDel(S.del,remote.del);
   S.tasks=mergeArr(S.tasks,(remote.tasks||[]).map(normalize),S.del);
-  S.folders=mergeArr(S.folders,remote.folders||[],S.del);
+  S.folders=mergeArr(S.folders,remote.folders||[],S.del); normFolders();
   var beforeN=JSON.stringify(S.notes);
   S.notes=mergeArr(S.notes,(remote.notes||[]).map(normalizeNote),S.del);
   var beforeR=JSON.stringify(S.series);
@@ -3087,6 +3335,9 @@ function setView(v){
   S.view=v;
   ['day','list','notes','note','arch'].forEach(function(k){ $('#v-'+k).classList.toggle('on',v===k); });
   $('#fab').hidden=(v==='arch'||v==='note');
+  $('#nToolbar').hidden=(v!=='note');
+  document.body.classList.toggle('note-open', v==='note');
+  if(v!=='note'){ closeFmt(); }
   var tabOf=(v==='note')?'notes':v;
   $$('.tab').forEach(function(b){b.classList.toggle('on',b.dataset.view===tabOf);});
 }
@@ -3195,6 +3446,19 @@ function seed(){
   ];
   save();
 }
+
+/* ---------- клавиатура: держим панель форматирования над ней ---------- */
+(function(){
+  var vv=window.visualViewport; if(!vv) return;
+  function upd(){
+    var kb=Math.max(0, Math.round(window.innerHeight - vv.height - vv.offsetTop));
+    if(kb<80) kb=0;                                   // мелкая разница — это не клавиатура
+    document.documentElement.style.setProperty('--kb', kb+'px');
+    document.body.classList.toggle('kb', kb>0);
+    if(kb>0) keepCaret();
+  }
+  vv.addEventListener('resize',upd); vv.addEventListener('scroll',upd); upd();
+})();
 
 /* ---------- запущено как приложение? ---------- */
 if(window.navigator.standalone||(window.matchMedia&&matchMedia('(display-mode: standalone)').matches))
