@@ -49,7 +49,9 @@ manifest.json         PWA manifest
 icons/                app icons (make_icons.py regenerates them)
 functions/api/sync.js sync API as a Cloudflare Pages Function (KV storage)
 wrangler.example.toml Pages project config template (copy to wrangler.toml, git-ignored)
-server/               self-hosted alternative: Node sync server, nginx and systemd examples
+server/               self-hosted alternative: Node server (app + sync), nginx and systemd examples
+Dockerfile            whole instance in one container
+docker-compose.yml    the same, with a named volume for the data
 tools/shots/          headless-Chrome rig that renders the README screenshots
 docs/                 screenshots, GIF and the social preview image
 ```
@@ -111,7 +113,38 @@ Delete the secret to open sync again.
 
 ---
 
-## Option B — your own server
+## Option B — Docker (one container, app + sync)
+
+```bash
+git clone https://github.com/drkokorev/Planly && cd Planly
+docker compose up -d
+```
+
+That's the whole thing: http://localhost:8080 serves the app and the sync API
+from the same origin, with documents in a named volume. Plain Docker works too:
+
+```bash
+docker build -t planly .
+docker run -d -p 8080:8080 -v planly-data:/data --name planly planly
+```
+
+Put it behind your usual reverse proxy with a certificate — service workers,
+offline mode and "Add to Home Screen" all require a secure origin.
+
+The image is `node:22-alpine` with no dependencies to install, runs as the
+unprivileged `node` user and has a healthcheck. Useful environment variables:
+
+| Variable | Default | Meaning |
+|---|---|---|
+| `PORT` / `HOST` | `8080` / `0.0.0.0` | where the server listens |
+| `DATA_DIR` | `/data` | one JSON file per access code |
+| `ALLOWED_CODES` | unset | comma-separated allowlist; unset accepts any code |
+| `SERVE_STATIC` | enabled | `0` turns off static serving (sync API only) |
+
+Updating: `git pull && docker compose up -d --build`. Your data lives in the
+volume, not in the image.
+
+## Option C — your own server, without Docker
 
 The app is static: copy `index.html`, `sw.js`, `manifest.json`, `version.txt`
 and `icons/` (all produced in `dist/` by `./build.sh`) to any web root behind
@@ -121,13 +154,17 @@ For sync, run the reference server — a single Node file with no dependencies
 that stores one JSON file per code:
 
 ```bash
-PORT=8787 DATA_DIR=/var/lib/planly node server/sync-node.js
+PORT=8787 DATA_DIR=/var/lib/planly SERVE_STATIC=0 node server/sync-node.js
 ```
 
 and proxy `/api/sync` to it from your web server. `server/nginx.example.conf`
 is a complete nginx site (static files with correct cache headers + the proxy),
 `server/planly-sync.service` a systemd unit. Set `ALLOWED_CODES` in the unit's
 environment to restrict access, or leave it unset to allow any code.
+
+The same file can serve the app itself instead of nginx — drop `SERVE_STATIC=0`
+and point `STATIC_DIR` at the folder with `index.html`. That is exactly what the
+Docker image does.
 
 The app calls `api/sync` relative to its own URL, so it works both at a domain
 root and in a sub-folder.

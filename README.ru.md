@@ -50,7 +50,9 @@ manifest.json         манифест PWA
 icons/                иконки (make_icons.py пересоздаёт)
 functions/api/sync.js API синхронизации как функция Cloudflare Pages (хранилище KV)
 wrangler.example.toml шаблон конфига Pages (копируется в wrangler.toml, тот в .gitignore)
-server/               свой сервер: Node-сервер синхронизации, примеры nginx и systemd
+server/               свой сервер: Node-сервер (приложение + синхронизация), примеры nginx и systemd
+Dockerfile            весь экземпляр в одном контейнере
+docker-compose.yml    то же самое, с именованным томом для данных
 tools/shots/          стенд на headless Chrome, который рендерит скриншоты для README
 docs/                 скриншоты, GIF и картинка для social preview
 ```
@@ -113,7 +115,37 @@ printf 'AAAA-BBBB-CCCC-DDDD,EEEE-FFFF-GGGG-HHHH' | npx wrangler pages secret put
 
 ---
 
-## Вариант Б — свой сервер
+## Вариант Б — Docker (один контейнер: приложение и синхронизация)
+
+```bash
+git clone https://github.com/drkokorev/Planly && cd Planly
+docker compose up -d
+```
+
+Это всё: на http://localhost:8080 с одного адреса работают и приложение, и API
+синхронизации, документы лежат в именованном томе. Через обычный docker так же:
+
+```bash
+docker build -t planly .
+docker run -d -p 8080:8080 -v planly-data:/data --name planly planly
+```
+
+Поставьте это за свой обратный прокси с сертификатом — service worker, офлайн и
+«На экран „Домой“» требуют защищённого соединения.
+
+Образ на `node:22-alpine`, ставить нечего (зависимостей нет), работает от
+непривилегированного пользователя `node`, есть healthcheck. Полезные переменные:
+
+| Переменная | По умолчанию | Что делает |
+|---|---|---|
+| `PORT` / `HOST` | `8080` / `0.0.0.0` | где слушать |
+| `DATA_DIR` | `/data` | по одному JSON на код доступа |
+| `ALLOWED_CODES` | не задана | белый список кодов через запятую; без неё принимается любой |
+| `SERVE_STATIC` | включено | `0` отключает раздачу статики (только API) |
+
+Обновление: `git pull && docker compose up -d --build`. Данные лежат в томе, а не в образе.
+
+## Вариант В — свой сервер, без Docker
 
 Приложение статическое: скопируйте `index.html`, `sw.js`, `manifest.json`,
 `version.txt` и `icons/` (всё это `./build.sh` кладёт в `dist/`) в любой
@@ -123,13 +155,17 @@ printf 'AAAA-BBBB-CCCC-DDDD,EEEE-FFFF-GGGG-HHHH' | npx wrangler pages secret put
 хранящий по JSON-файлу на код:
 
 ```bash
-PORT=8787 DATA_DIR=/var/lib/planly node server/sync-node.js
+PORT=8787 DATA_DIR=/var/lib/planly SERVE_STATIC=0 node server/sync-node.js
 ```
 
 и проксируйте на него `/api/sync` со своего веб-сервера.
 `server/nginx.example.conf` — готовый сайт для nginx (статика с правильными
 заголовками кэша + прокси), `server/planly-sync.service` — юнит systemd.
 Переменная `ALLOWED_CODES` в окружении ограничивает доступ; без неё принимается любой код.
+
+Тот же файл умеет раздавать и само приложение вместо nginx — уберите
+`SERVE_STATIC=0` и укажите `STATIC_DIR` на папку с `index.html`. Ровно это и
+делает Docker-образ.
 
 Приложение обращается к `api/sync` относительно своего адреса, поэтому
 одинаково работает и в корне домена, и в подпапке.

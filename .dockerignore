@@ -1,0 +1,15 @@
+.git
+.github
+node_modules
+dist
+.build
+docs
+tools
+functions
+src
+.wrangler
+wrangler.toml
+wrangler.example.toml
+*.md
+Dockerfile
+docker-compose.yml
