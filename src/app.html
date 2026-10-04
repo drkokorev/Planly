@@ -412,6 +412,7 @@ textarea.f-note{width:100%;background:var(--field);border:0;border-radius:12px;p
     <div class="nbar">
       <button class="back" id="nBack"><svg viewBox="0 0 24 24"><path d="M15 5l-7 7 7 7"/></svg><span data-i18n="Заметки">Заметки</span></button>
       <div class="grow"></div>
+      <button class="tb r" id="nToTasks" style="min-width:0" data-i18n="В дела">В дела</button>
       <button class="tb r" id="nDel" style="color:var(--red);min-width:0" data-i18n="Удалить">Удалить</button>
     </div>
     <input class="ntitle" id="nTitle" placeholder="Заголовок" data-i18n-ph="Заголовок" autocomplete="off">
@@ -962,6 +963,7 @@ function openFoldersSheet(){
     '<div class="sh-h"><button class="tb" id="fsClose">'+tr('Закрыть')+'</button><div class="t">'+tr('Папки')+'</div>'+
     '<button class="tb r strong" id="fsAdd">+</button></div>'+
     '<div class="sh-b"><div id="fsList"></div>'+
+    '<button class="subtle" id="fsToNote">'+tr('Выгрузить в заметку')+'</button>'+
     '<div class="hint" style="text-align:center">'+tr('Перетащите, чтобы изменить порядок')+'</div></div>');
 
   function row(id,name,drag){
@@ -984,6 +986,7 @@ function openFoldersSheet(){
         el.addEventListener('click',function(){ S.folderSel=id; closeSheet(); render(); });
         return;
       }
+      if(0){}
       wireFolderRow(el);
     });
   }
@@ -1019,6 +1022,10 @@ function openFoldersSheet(){
       tap:function(){ S.folderSel=el.dataset.f; closeSheet(); render(); }
     });
   }
+  $('#fsToNote',sh).addEventListener('click',function(){
+    var sel=S.folderSel, name=(sel==='all'||sel==='none')?tr('Задачи'):folderName(sel);
+    closeSheet(); exportTasksToNote(backlogIn(sel), name);
+  });
   $('#fsClose',sh).addEventListener('click',closeSheet);
   $('#fsAdd',sh).addEventListener('click',function(){
     closeSheet();
@@ -1057,6 +1064,7 @@ function openFolderSheet(f){
     '<div class="sh-b">'+
       '<input class="f-title" id="fName" maxlength="24">'+
       '<div class="hint">'+tr('В папке: {n}',{n:backlogIn(f.id).length+' '+plur(backlogIn(f.id).length,"задача","задачи","задач")})+'</div>'+
+      '<button class="subtle" id="fToNote">'+tr('Выгрузить в заметку')+'</button>'+
       '<button class="danger" id="fDel">'+tr('Удалить папку')+'</button>'+
       '<div class="hint" style="text-align:center">'+tr('Задачи не пропадут — они переедут в «Без папки»')+'</div>'+
     '</div>');
@@ -1066,6 +1074,10 @@ function openFolderSheet(f){
     var v=$('#fName',sh).value.trim();
     if(v){ f.name=v; save(); }
     closeSheet(); render();
+  });
+  $('#fToNote',sh).addEventListener('click',function(){
+    closeSheet();
+    exportTasksToNote(backlogIn(f.id), f.name);
   });
   $('#fDel',sh).addEventListener('click',function(){
     snapshot();
@@ -1238,6 +1250,7 @@ function queueNote(){ clearTimeout(noteTimer); noteTimer=setTimeout(flushNote,60
 $('#nTitle').addEventListener('input',queueNote);
 $('#nBody').addEventListener('input',queueNote);
 $('#nBack').addEventListener('click',closeNote);
+$('#nToTasks').addEventListener('click',function(){ flushNote(); openImport(); });
 $('#nDel').addEventListener('click',function(){
   var x=noteById(noteId); if(!x){ closeNote(); return; }
   clearTimeout(noteTimer); snapshot();
@@ -1328,6 +1341,172 @@ $('#nTitle').addEventListener('keydown',function(e){
   if(e.key==='Enter'){ e.preventDefault(); $('#nBody').focus(); }
 });
 
+/* ---------- обмен «дела ⇄ заметка» ----------
+   Формат строки:  - 09:00 1h30m Название #{Папка} !high ^id
+   Заголовок дня:  ## 2026-10-05   (или ## backlog для дел без времени)
+   Время можно не писать — при импорте дело само встанет в свободное окно дня.
+   ^id — служебная метка: если она сохранилась, дело обновится, а не продублируется. */
+
+function durToText(m){
+  var h=Math.floor(m/60), mm=m%60;
+  return (h?h+'h':'')+(mm?mm+'m':(h?'':'0m'));
+}
+function textToDur(str){
+  var m=/^(\d+)\s*(?:h|ч)\s*(?:(\d+)\s*(?:m|м|мин)?)?$/i.exec(str);
+  if(m) return (+m[1])*60+(+(m[2]||0));
+  m=/^(\d+)\s*(?:m|м|мин|min)$/i.exec(str);
+  if(m) return +m[1];
+  return 0;
+}
+var PRI_TOKEN=['low','med','high'];
+function taskToLine(t){
+  var parts=[];
+  if(t.start!=null) parts.push(hhmm(t.start));
+  parts.push(durToText(t.dur));
+  parts.push(t.title||tr('Без названия'));
+  if(t.folder&&folderById(t.folder)) parts.push('#{'+folderName(t.folder)+'}');
+  if(t.pri!==1) parts.push('!'+PRI_TOKEN[t.pri]);
+  parts.push('^'+t.id);
+  return '- '+parts.join(' ');
+}
+/* заметка ← дела */
+function tasksToNoteBody(tasks,intro){
+  var byDay={}, days=[], back=[];
+  tasks.forEach(function(t){
+    if(isSched(t)){ if(!byDay[t.date]){byDay[t.date]=[];days.push(t.date);} byDay[t.date].push(t); }
+    else back.push(t);
+  });
+  days.sort();
+  var html='<p>'+esc(intro)+'</p>';
+  days.forEach(function(d){
+    html+='<h3>## '+d+'</h3><ul>'+byDay[d].sort(function(a,b){return a.start-b.start;})
+      .map(function(t){ return '<li>'+esc(taskToLine(t).slice(2))+'</li>'; }).join('')+'</ul>';
+  });
+  if(back.length){
+    html+='<h3>## backlog</h3><ul>'+back.map(function(t){ return '<li>'+esc(taskToLine(t).slice(2))+'</li>'; }).join('')+'</ul>';
+  }
+  return html;
+}
+function exportTasksToNote(tasks,title){
+  if(!tasks.length){ toast(tr('Нечего выгружать')); return null; }
+  snapshot();
+  var note=normalizeNote({id:uid(),title:title,upd:Date.now(),
+    body:tasksToNoteBody(tasks,tr('Формат: «## 2026-10-05» — день, строки «- 09:00 1h Название #{Папка} !high ^id». Время можно не указывать — приложение само найдёт свободное окно. Метку ^id не меняйте.'))});
+  S.notes.push(note); save(); render(); openNote(note.id);
+  toast(tr('Заметка создана'),true);
+  return note;
+}
+
+/* дела ← заметка */
+function noteToLines(html){
+  var src=(html||'').replace(/<li[^>]*>/gi,'\n- ').replace(/<(h2|h3|p|div)[^>]*>/gi,'\n').replace(/<br\s*\/?>/gi,'\n');
+  var tpl=document.createElement('template'); tpl.innerHTML=src;
+  return (tpl.content.textContent||'').split('\n').map(function(x){return x.trim();}).filter(Boolean);
+}
+function parseNote(html){
+  var out=[], day=null, lines=noteToLines(html), i;
+  for(i=0;i<lines.length;i++){
+    var ln=lines[i], head=ln.replace(/^#+\s*/,'').trim();
+    var isBullet=/^[-*•]\s+/.test(ln)||/^\d+[.)]\s+/.test(ln);
+    if(!isBullet){
+      var d=/^(\d{4}-\d{2}-\d{2})\b/.exec(head);
+      if(d){ day=d[1]; continue; }
+      if(/^(backlog|без времени|no time|без даты)$/i.test(head)){ day=null; continue; }
+      continue;                                   // прочий текст (справка, заголовки) пропускаем
+    }
+    var rest=ln.replace(/^([-*•]|\d+[.)])\s+/,'').trim(), item={date:day,start:null,dur:0,pri:1,folder:null,id:null};
+    var m=/^(\d{1,2}):(\d{2})\s*(?:[-–—]\s*\d{1,2}:\d{2})?\s*/.exec(rest);
+    if(m){ item.start=(+m[1])*60+(+m[2]); rest=rest.slice(m[0].length); }
+    m=/^(\d+\s*(?:h|ч)\s*(?:\d+\s*(?:m|м|мин)?)?|\d+\s*(?:m|м|мин|min))\s+/i.exec(rest);
+    if(m){ item.dur=textToDur(m[1].trim()); rest=rest.slice(m[0].length); }
+    m=/\^([A-Za-z0-9]{4,32})\s*$/.exec(rest);
+    if(m){ item.id=m[1]; rest=rest.slice(0,m.index); }
+    m=/!(high|med|medium|low|[012])\b/i.exec(rest);
+    if(m){
+      var p=m[1].toLowerCase();
+      item.pri=(p==='high'||p==='2')?2:((p==='low'||p==='0')?0:1);
+      rest=rest.replace(m[0],' ');
+    }
+    m=/#\{([^}]+)\}/.exec(rest) || /#(\S+)/.exec(rest);
+    if(m){ item.folderName=m[1].trim(); rest=rest.replace(m[0],' '); }
+    item.title=rest.replace(/\s*[·•]\s*/g,' ').replace(/\s+/g,' ').trim();
+    if(!item.dur) item.dur=S.settings.dur;
+    if(item.title) out.push(item);
+  }
+  return out;
+}
+function applyParsed(items){
+  var folders={}, placed=0, created=0, updated=0;
+  function folderIdFor(name){
+    if(!name) return null;
+    if(folders[name]) return folders[name];
+    var f=S.folders.filter(function(x){return x.name.toLowerCase()===name.toLowerCase();})[0];
+    if(!f){ f={id:uid(),name:name,ord:S.folders.length}; S.folders.push(f); }
+    folders[name]=f.id; return f.id;
+  }
+  snapshot();
+  items.forEach(function(it){
+    var t=it.id&&byId(it.id);
+    if(t){ updated++; } else { t=normalize({id:uid()}); S.tasks.push(t); created++; }
+    t.title=it.title; t.dur=it.dur; t.pri=it.pri;
+    t.folder=it.folderName!==undefined ? folderIdFor(it.folderName) : t.folder;
+    if(it.date){
+      if(t.seriesId) detachInstance(t);
+      t.date=it.date;
+      if(it.start!=null) t.start=it.start;
+      else {                                      // без времени — ищем свободное окно этого дня
+        var st=slotStarts(it.date,t.dur,t.id,1);
+        t.start=st.length?st[0]:Math.max(dayMin(),Math.min(dayMax()-t.dur,t.start||dayMin()));
+        placed++;
+      }
+      t.start=Math.max(dayMin(),Math.min(dayMax()-t.dur,t.start));
+    }else{
+      if(t.seriesId) detachInstance(t);
+      t.date=null; t.start=null;
+    }
+  });
+  save(); render();
+  return {created:created,updated:updated,placed:placed};
+}
+
+/* окно импорта из открытой заметки */
+function openImport(){
+  var note=noteById(noteId); if(!note) return;
+  var items=parseNote(note.body), days={}, back=0;
+  items.forEach(function(it){ if(it.date) days[it.date]=1; else back++; });
+  var nDays=Object.keys(days).length,
+      upd=items.filter(function(i){return i.id&&byId(i.id);}).length,
+      auto=items.filter(function(i){return i.date&&i.start==null;}).length;
+  var sh=openSheet(
+    '<div class="sh-h"><button class="tb" id="iCancel">'+tr('Отмена')+'</button>'+
+    '<div class="t">'+tr('Из заметки в дела')+'</div><span class="tb r"></span></div>'+
+    '<div class="sh-b">'+
+      (items.length
+        ? '<div class="card">'+
+            '<div class="row"><span class="lbl">'+tr('Строк разобрано')+'</span><span style="color:var(--text-2)">'+items.length+'</span></div>'+
+            '<div class="row"><span class="lbl">'+tr('Обновится')+'</span><span style="color:var(--text-2)">'+upd+'</span></div>'+
+            '<div class="row"><span class="lbl">'+tr('Появится новых')+'</span><span style="color:var(--text-2)">'+(items.length-upd)+'</span></div>'+
+            '<div class="row"><span class="lbl">'+tr('Дней')+'</span><span style="color:var(--text-2)">'+nDays+'</span></div>'+
+            '<div class="row"><span class="lbl">'+tr('В список без времени')+'</span><span style="color:var(--text-2)">'+back+'</span></div>'+
+          '</div>'+
+          (auto?'<div class="hint">'+tr('Без указанного времени: {n} — встанут в свободные окна',{n:auto})+'</div>':'')+
+          '<button class="prim" id="iGo">'+tr('Применить')+'</button>'
+        : '<div class="hint">'+tr('В заметке не нашлось строк вида «- 09:00 1h Название». Проверьте формат.')+'</div>')+
+      '<div class="hint" style="text-align:center">'+tr('Формат: «## 2026-10-05» — день, строки «- 09:00 1h Название #{Папка} !high ^id». Время можно не указывать — приложение само найдёт свободное окно. Метку ^id не меняйте.')+'</div>'+
+    '</div>');
+  $('#iCancel',sh).addEventListener('click',closeSheet);
+  if($('#iGo',sh)) $('#iGo',sh).addEventListener('click',function(){
+    var r=applyParsed(items);
+    closeSheet();
+    if(r.created+r.updated){
+      setView('day');
+      var first=Object.keys(days).sort()[0]; if(first){ goDay(first); if(S.settings.mode==='scale') focusDay(); }
+      render();
+    }
+    toast(tr('Готово: {n}',{n:tr('новых')+' '+r.created+', '+tr('обновлено')+' '+r.updated}),true);
+  });
+}
+
 /* ---------- разгрузка дней: дела за период → в список или в заметку ---------- */
 function fmtShort(iso){ return fromISO(iso).toLocaleDateString(LOCALE,{day:'numeric',month:'short'}).replace(/\.$/,''); }
 function rangeTasks(from,to){
@@ -1401,13 +1580,7 @@ function openUnload(){
       S.folderSel=f.id; setView('list'); render();
       toast(tr('Перенесено в «{f}»',{f:name}),true);
     }else{
-      var byDay={}, days=[];
-      l.forEach(function(t){ if(!byDay[t.date]){ byDay[t.date]=[]; days.push(t.date); } byDay[t.date].push(t); });
-      var body=days.map(function(d){
-        return '<h3>'+esc(fmtDay(d))+'</h3><ul>'+byDay[d].map(function(t){
-          return '<li>'+hhmm(t.start)+' – '+hhmm(t.start+t.dur)+' · '+esc(t.title||tr('Без названия'))+'</li>';
-        }).join('')+'</ul>';
-      }).join('');
+      var body=tasksToNoteBody(l,tr('Формат: «## 2026-10-05» — день, строки «- 09:00 1h Название #{Папка} !high ^id». Время можно не указывать — приложение само найдёт свободное окно. Метку ^id не меняйте.'));
       var note=normalizeNote({id:uid(),title:tr('Дела')+' '+defName(),body:body,upd:Date.now()});
       S.notes.push(note);
       if(U.clear) l.forEach(function(t){

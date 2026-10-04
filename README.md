@@ -16,7 +16,8 @@ screen, and syncs between devices through a single access code when you want it 
 - **Tasks** — things without a time, in folders you create, with three priorities. Drag to reorder or change priority; schedule into a free window or automatically.
 - **Notes** — drafts by topic with headings, bullet and numbered lists, bold and italic. Saves as you type.
 - **Archive** — completed items, grouped by day, auto-removed after two weeks.
-- **Unload a range** — pick any stretch of days and send everything scheduled in it either back to the task list (into a folder named after the range, ready to be re-planned) or into a note listing it day by day. Settings → Tools, or the button under the calendar.
+- **Unload a range** — pick any stretch of days and send everything scheduled in it either back to the task list (into a folder named after the range, ready to be re-planned) or into a note. Settings → Tools, or the button under the calendar.
+- **Tasks ⇄ notes** — export any folder (or the whole untimed list) into a note in a small text format, hand that note to an LLM to restructure, paste it back and press *To tasks*: lines land on their days, and anything without a time is placed into a free window automatically. Each line carries a `^id`, so a round trip updates the same tasks instead of duplicating them.
 - **Sync** — optional. One code = one shared list. Per-item merge by modification time, tombstones for deletions, offline-first.
 - Light/dark theme, seven accent colors, six languages (en, ru, es, de, zh, hi), keyboard shortcuts on desktop.
 
@@ -220,6 +221,31 @@ opened at a different address starts empty.
 `1`–`4` tabs, `Esc` close.
 
 ---
+
+## The note format
+
+Any folder or date range can be dumped into a note that looks like this:
+
+```
+## 2026-10-05
+- 09:00 1h Team sync #{Work} !high ^mwt6lle
+- 10:30 1h30m Write the report #{Work} !high ^2e3968e
+- 1h Gym ^ocnmfdr
+## backlog
+- 30m Book a doctor #{Home} !low ^o2tud57
+```
+
+`## YYYY-MM-DD` opens a day, `## backlog` the untimed list. A line is
+`- [HH:MM] [duration] title [#{folder}] [!low|!med|!high] [^id]`; everything
+except the title is optional. Leave the time out and the app puts the task into
+the first free window of that day. Durations are `45m`, `1h`, `1h30m` (Russian
+`ч`/`м` work too). The `^id` marker is how a round trip updates existing tasks
+instead of creating copies — an LLM should carry it through unchanged; lines
+without one simply become new tasks.
+
+Press **To tasks** in a note to apply it. The app shows what it parsed —
+how many lines, how many will be updated, how many days are affected — before
+anything changes, and the result can be undone.
 
 ## How data is stored
 
