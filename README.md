@@ -16,6 +16,7 @@ screen, and syncs between devices through a single access code when you want it 
 - **Tasks** — things without a time, in folders you create, with three priorities. Drag to reorder or change priority; schedule into a free window or automatically.
 - **Notes** — drafts by topic with headings, bullet and numbered lists, bold and italic. Saves as you type.
 - **Archive** — completed items, grouped by day, auto-removed after two weeks.
+- **Unload a range** — pick any stretch of days and send everything scheduled in it either back to the task list (into a folder named after the range, ready to be re-planned) or into a note listing it day by day. Settings → Tools, or the button under the calendar.
 - **Sync** — optional. One code = one shared list. Per-item merge by modification time, tombstones for deletions, offline-first.
 - Light/dark theme, seven accent colors, six languages (en, ru, es, de, zh, hi), keyboard shortcuts on desktop.
 
