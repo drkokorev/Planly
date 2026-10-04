@@ -13,7 +13,7 @@ screen, and syncs between devices through a single access code when you want it 
 - **Day** — a vertical timeline where each task is a block as tall as its duration. Tap a time to add, drag to move, pull the bottom edge to resize. Overlaps split into columns. A list view shows the same day as rows with free windows between tasks.
 - **Repeats** — every day or chosen weekdays. Edits apply to one day; "apply to all future" pushes them down the series.
 - **Calendar** — tap the date to open a month view; days with tasks are underlined.
-- **Tasks** — things without a time, in folders you create, with four priorities; the top one, *Urgent*, frames the task in bright red wherever it appears. Drag to reorder or change priority; schedule into a free window or automatically.
+- **Tasks** — things without a time, in folders you create, with four priorities; the top one, *Urgent*, frames the task in bright red wherever it appears. Deleting a non-empty folder asks whether to keep its tasks in the main list or remove them with it. Drag to reorder or change priority; schedule into a free window or automatically.
 - **Notes** — drafts by topic with headings, bullet and numbered lists, bold and italic. Saves as you type.
 - **Archive** — completed items, grouped by day, auto-removed after two weeks.
 - **Unload a range** — pick any stretch of days and send everything scheduled in it either back to the task list (into a folder named after the range, ready to be re-planned) or into a note. Settings → Tools, or the button under the calendar.

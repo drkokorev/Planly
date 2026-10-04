@@ -1081,7 +1081,6 @@ function openFolderSheet(f){
       '<div class="hint">'+tr('В папке: {n}',{n:backlogIn(f.id).length+' '+plur(backlogIn(f.id).length,"задача","задачи","задач")})+'</div>'+
       '<button class="subtle" id="fToNote">'+tr('Выгрузить в заметку')+'</button>'+
       '<button class="danger" id="fDel">'+tr('Удалить папку')+'</button>'+
-      '<div class="hint" style="text-align:center">'+tr('Задачи не пропадут — они переедут в «Без папки»')+'</div>'+
     '</div>');
   $('#fName',sh).value=f.name;
   $('#fCancel',sh).addEventListener('click',closeSheet);
@@ -1095,12 +1094,38 @@ function openFolderSheet(f){
     exportTasksToNote(backlogIn(f.id), f.name);
   });
   $('#fDel',sh).addEventListener('click',function(){
-    snapshot();
-    S.tasks.forEach(function(t){ if(t.folder===f.id) t.folder=null; });
-    S.folders=S.folders.filter(function(x){return x.id!==f.id;});
-    S.folderSel='all'; save(); closeSheet(); render(); toast(tr('Папка удалена'),true);
+    var v=$('#fName',sh).value.trim(); if(v) f.name=v;
+    closeSheet(); askFolderDelete(f);
   });
   setTimeout(function(){$('#fName',sh).focus();},260);
+}
+
+/* что делать с задачами папки — переспрашиваем, если они там есть */
+function askFolderDelete(f){
+  var inside=backlogIn(f.id), all=S.tasks.filter(function(t){return t.folder===f.id;});
+  function drop(withTasks){
+    snapshot();
+    if(withTasks) S.tasks=S.tasks.filter(function(t){return t.folder!==f.id;});
+    else S.tasks.forEach(function(t){ if(t.folder===f.id) t.folder=null; });
+    S.folders=S.folders.filter(function(x){return x.id!==f.id;});
+    S.folderSel='all'; save(); closeSheet(); render();
+    toast(tr(withTasks?'Папка и задачи удалены':'Папка удалена'),true);
+  }
+  if(!all.length){ drop(false); return; }
+
+  var sh=openSheet(
+    '<div class="sh-h"><button class="tb" id="dCancel">'+tr('Отмена')+'</button>'+
+    '<div class="t">'+tr('Удалить папку')+'</div><span class="tb r"></span></div>'+
+    '<div class="sh-b">'+
+      '<div class="who">'+tr('Папка «{f}»',{f:esc(f.name)})+' · '+
+        tr('В папке: {n}',{n:inside.length+' '+plur(inside.length,"задача","задачи","задач")})+'</div>'+
+      '<button class="prim" id="dKeep">'+tr('Перенести задачи в общий список')+'</button>'+
+      '<button class="danger" id="dAll">'+tr('Удалить вместе с задачами')+'</button>'+
+      '<div class="hint" style="text-align:center">'+tr('Любой из вариантов можно сразу отменить подсказкой внизу.')+'</div>'+
+    '</div>');
+  $('#dCancel',sh).addEventListener('click',closeSheet);
+  $('#dKeep',sh).addEventListener('click',function(){ drop(false); });
+  $('#dAll',sh).addEventListener('click',function(){ drop(true); });
 }
 
 $('#folders').addEventListener('click',function(e){
